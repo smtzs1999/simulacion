@@ -1,0 +1,4 @@
+[
+  { "id": 1, "nombre": "Centro", "ubicacion": "Calle Falsa 123" },
+  { "id": 2, "nombre": "Parque", "ubicacion": "Av. Siempre Viva 742" }
+]

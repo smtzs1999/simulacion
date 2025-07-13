@@ -1,0 +1,5 @@
+[
+  { "id": 101, "estado": "libre", "estacion_id": 1 },
+  { "id": 102, "estado": "ocupada", "estacion_id": 1 },
+  { "id": 103, "estado": "libre", "estacion_id": 2 }
+]
