@@ -9,6 +9,7 @@ import Temporizador from "./components/Temporizador";
 import Historial from "./components/Historial";
 import Perfil from "./components/Perfil";
 import Navbar from "./components/Navbar";
+import { Dashboard } from "./components/Dashboard";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -42,7 +43,6 @@ function App() {
     });
   }
 
-  // Si no está logueado, solo muestra Login y Registro
   if (!usuario) {
     return (
       <Router>
@@ -56,7 +56,7 @@ function App() {
     );
   }
 
-  // Si está logueado, muestra la app principal
+
   return (
     <Router>
       <Navbar />
@@ -65,6 +65,7 @@ function App() {
           path="/"
           element={
             <>
+              <Dashboard/>
               <MapaEstaciones />
               <ListaBicicletas onAlquilar={iniciarViaje} />
               <Temporizador activo={viajeActivo} onStop={terminarViaje} />
@@ -76,7 +77,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
-  );
+  );m
 }
 
 export default App;
