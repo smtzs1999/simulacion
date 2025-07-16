@@ -5,7 +5,7 @@ const Navbar = ({ user, onLogout }) => {
     <nav className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center shadow-md">
 
       <div className="text-xl font-bold flex items-center gap-2">
-        <img src="/logo.png" alt="Logo" className="h-8 w-8" />
+        <img src="../src/assets/logo-bici.jpg" alt="Logo" className="h-8 w-8" />
         <span>Mi Aplicación</span>
       </div>
 
@@ -20,6 +20,7 @@ const Navbar = ({ user, onLogout }) => {
           >
             Cerrar sesión
           </button>
+          
         </div>
       )}
     </nav>
