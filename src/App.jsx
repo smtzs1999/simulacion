@@ -24,18 +24,27 @@ function App() {
     setUsuario(user);
   }
 
+  function handleLogout() {
+    setUsuario(null);
+    setViajeActivo(false);
+    setHistorial([]);
+  }
+
   function iniciarViaje(idBici) {
     setViajeActivo(true);
-    setHistorial(v => [...v, {
-      estacion: "Estación Demo",
-      duracion: "En curso",
-      fecha: new Date().toLocaleString(),
-    }]);
+    setHistorial((v) => [
+      ...v,
+      {
+        estacion: "Estación Demo",
+        duracion: "En curso",
+        fecha: new Date().toLocaleString(),
+      },
+    ]);
   }
 
   function terminarViaje() {
     setViajeActivo(false);
-    setHistorial(v => {
+    setHistorial((v) => {
       const copia = [...v];
       const ultimo = copia[copia.length - 1];
       if (ultimo) ultimo.duracion = "00:05:23"; // Duración simulada
@@ -43,41 +52,37 @@ function App() {
     });
   }
 
-  if (!usuario) {
-    return (
-      <Router>
-        <Navbar />
-        <Routes>
-          <Route path="/login" element={<Login onLogin={handleLogin} />} />
-          <Route path="/registro" element={<Registro onRegister={handleRegister} />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </Router>
-    );
-  }
-
-
   return (
     <Router>
-      <Navbar />
+      <Navbar user={usuario} onLogout={handleLogout} />
       <Routes>
-        <Route
-          path="/"
-          element={
-            <>
-              <Dashboard/>
-              <MapaEstaciones />
-              <ListaBicicletas onAlquilar={iniciarViaje} />
-              <Temporizador activo={viajeActivo} onStop={terminarViaje} />
-            </>
-          }
-        />
-        <Route path="/historial" element={<Historial viajes={historial} />} />
-        <Route path="/perfil" element={<Perfil usuario={usuario} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {!usuario ? (
+          <>
+            <Route path="/login" element={<Login onLogin={handleLogin} />} />
+            <Route path="/registro" element={<Registro onRegister={handleRegister} />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </>
+        ) : (
+          <>
+            <Route
+              path="/"
+              element={
+                <>
+                  <Dashboard />
+                  <MapaEstaciones />
+                  <ListaBicicletas onAlquilar={iniciarViaje} />
+                  <Temporizador activo={viajeActivo} onStop={terminarViaje} />
+                </>
+              }
+            />
+            <Route path="/historial" element={<Historial viajes={historial} />} />
+            <Route path="/perfil" element={<Perfil usuario={usuario} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </>
+        )}
       </Routes>
     </Router>
-  );m
+  );
 }
 
 export default App;

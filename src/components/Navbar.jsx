@@ -1,54 +1,29 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
 
-export default function Navbar() {
-  const [user, setUser] = useState(null);
-  const navigate = useNavigate();
-
-  // Revisamos si hay usuario guardado
-  useEffect(() => {
-    const storedUser = localStorage.getItem('usuario');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Error al cargar usuario:", e);
-      }
-    }
-  }, []);
-
-  // Función para cerrar sesión
-  const handleLogout = () => {
-    localStorage.removeItem('usuario');
-    setUser(null);
-    navigate('/login');
-  };
-
+const Navbar = ({ user, onLogout }) => {
   return (
-    <nav className="bg-blue-600 p-4 text-white flex justify-between items-center">
-      {/* Logo y título */}
-      <div className="flex items-center space-x-2">
-        <span className="font-bold text-xl">BiciSmart</span>
+    <nav className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center shadow-md">
+
+      <div className="text-xl font-bold flex items-center gap-2">
+        <img src="/logo.png" alt="Logo" className="h-8 w-8" />
+        <span>Mi Aplicación</span>
       </div>
 
-      {/* Parte derecha del navbar */}
-      <div className="flex items-center space-x-4">
-        <img src="/ruta-del-logo.png" alt="Logo BiciSmart" className="h-8 w-8" />
-
-        {user && (
-          <>
-            <span className="font-semibold">👤 {user.nombre}</span>
-            <Link to="/perfil" className="hover:underline">Perfil</Link>
-            <Link to="/historial" className="hover:underline">Historial</Link>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
-            >
-              Cerrar sesión
-            </button>
-          </>
-        )}
-      </div>
+  
+      {user && (
+        <div className="flex items-center gap-4">
+          <span>Hola, <strong>{user.name}</strong></span>
+          <a href="/historial" className="hover:underline">Historial</a>
+          <button 
+            onClick={onLogout} 
+            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      )}
     </nav>
   );
-}
+};
+
+export default Navbar;
