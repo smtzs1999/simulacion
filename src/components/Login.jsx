@@ -91,7 +91,7 @@ export default function AuthTabs({ onLogin }) {
 
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 border rounded shadow bg-white">
+    <div className="max-w-md mx-auto mt-10 p-6 border-spacing-4 rounded-3xl shadow-2xl bg-white " >
       <div className="flex mb-6 border-b">
         <button
           onClick={() => setActiveTab('login')}
@@ -112,7 +112,7 @@ export default function AuthTabs({ onLogin }) {
       {activeTab === 'login' && (
         <form onSubmit={handleLogin}>
           <input
-            className="w-full p-2 mb-4 border rounded"
+            className="w-full p-2 mb-4 border rounded-xl border-gray-300 "
             type="email"
             placeholder="Correo"
             value={email}
@@ -120,14 +120,14 @@ export default function AuthTabs({ onLogin }) {
             required
           />
           <input
-            className="w-full p-2 mb-4 border rounded"
+            className="w-full p-2 mb-4 border rounded-xl border-gray-300"
             type="password"
             placeholder="Contraseña"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
           />
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
+          <button type="submit" className="bg-blue-600 text-white px-4 py-2  hover:bg-blue-700 w-full rounded-xl">
             Iniciar sesión
           </button>
         </form>
@@ -136,7 +136,7 @@ export default function AuthTabs({ onLogin }) {
       {activeTab === 'register' && (
         <form onSubmit={handleRegister}>
           <input
-            className="w-full p-2 mb-4 border rounded"
+            className="w-full p-2 mb-4 border rounded-xl border-gray-300"
             type="text"
             placeholder="Nombre"
             value={nombre}
@@ -144,7 +144,7 @@ export default function AuthTabs({ onLogin }) {
             required
           />
           <input
-            className="w-full p-2 mb-4 border rounded"
+            className="w-full p-2 mb-4 border rounded-xl border-gray-300"
             type="email"
             placeholder="Correo"
             value={email}
@@ -152,14 +152,14 @@ export default function AuthTabs({ onLogin }) {
             required
           />
           <input
-            className="w-full p-2 mb-4 border rounded"
+            className="w-full p-2 mb-4 border rounded-xl border-gray-300"
             type="password"
             placeholder="Contraseña"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
           />
-          <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">
+          <button type="submit" className="bg-green-600 text-white px-4 py-2  hover:bg-green-700 w-full rounded-xl">
             Registrarse
           </button>
         </form>
