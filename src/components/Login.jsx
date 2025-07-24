@@ -17,6 +17,7 @@ export default function AuthTabs({ onLogin }) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
   }
+  const adminEmails = ['admin@gmail.com', 'supervisor@empresa.com'];
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -35,13 +36,24 @@ export default function AuthTabs({ onLogin }) {
       const user = userCredential.user;
       const snapshot = await get(ref(database, 'usuarios/' + user.uid));
       const data = snapshot.exists() ? snapshot.val() : {};
-
+      const isAdmin = adminEmails.includes(user.email); 
       setShowWelcomeModal(true); // Mostrar modal de bienvenida
+      const userData = {
+      email: user.email,
+      id: user.uid,
+      nombre: data.nombre || 'Usuario',
+      isAdmin: isAdmin
+    };
+
+    // Guardar en localStorage para que AdminRoute pueda leerlo
+    localStorage.setItem('user', JSON.stringify(userData));
+
+    setShowWelcomeModal(true);
 
       setTimeout(() => {
-        onLogin({ email: user.email, id: user.uid, nombre: data.nombre || 'Usuario' });
-        navigate('/dashboard');
-      }, 2000);
+      onLogin(userData);
+      navigate(isAdmin ? '/admin' : '/dashboard'); // ✅ Redirige según el rol
+    }, 2000);
     } catch (err) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError('Correo o contraseña incorrectos');

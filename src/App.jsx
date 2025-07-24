@@ -10,6 +10,8 @@ import Historial from "./components/Historial";
 import Perfil from "./components/Perfil";
 import Navbar from "./components/Navbar";
 import { Dashboard } from "./components/Dashboard";
+import AdminRoute from "./components/AdminRoute";
+import DashboardAdmin from "./components/DashboardAdmin";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -54,34 +56,55 @@ function App() {
 
   return (
     <Router>
-      <Navbar user={usuario} onLogout={handleLogout} />
-      <Routes>
-        {!usuario ? (
+  <Navbar user={usuario} onLogout={handleLogout} />
+  <Routes>
+    {/* Público */}
+    <Route path="/login" element={!usuario ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
+    <Route path="/registro" element={!usuario ? <Registro onRegister={handleRegister} /> : <Navigate to="/" />} />
+
+    {/* Admin */}
+    <Route
+      path="/admin"
+      element={
+        usuario?.isAdmin ? (
+          <DashboardAdmin />
+        ) : (
+          <Navigate to="/" replace />
+        )
+      }
+    />
+
+    {/* Usuario */}
+    <Route
+      path="/"
+      element={
+        usuario ? (
           <>
-            <Route path="/login" element={<Login onLogin={handleLogin} />} />
-            <Route path="/registro" element={<Registro onRegister={handleRegister} />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Dashboard />
+            <MapaEstaciones />
+            <ListaBicicletas onAlquilar={iniciarViaje} />
+            <Temporizador activo={viajeActivo} onStop={terminarViaje} />
           </>
         ) : (
-          <>
-            <Route
-              path="/"
-              element={
-                <>
-                  <Dashboard />
-                  <MapaEstaciones />
-                  <ListaBicicletas onAlquilar={iniciarViaje} />
-                  <Temporizador activo={viajeActivo} onStop={terminarViaje} />
-                </>
-              }
-            />
-            <Route path="/historial" element={<Historial viajes={historial} />} />
-            <Route path="/perfil" element={<Perfil usuario={usuario} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </>
-        )}
-      </Routes>
-    </Router>
+          <Navigate to="/login" replace />
+        )
+      }
+    />
+
+    <Route
+      path="/historial"
+      element={usuario ? <Historial viajes={historial} /> : <Navigate to="/login" />}
+    />
+    <Route
+      path="/perfil"
+      element={usuario ? <Perfil usuario={usuario} /> : <Navigate to="/login" />}
+    />
+
+    {/* Catch-all */}
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes>
+</Router>
+
   );
 }
 
