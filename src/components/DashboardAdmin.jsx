@@ -3,7 +3,7 @@ import React from 'react';
 const DashboardAdmin = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-6 space-y-6">
-      {/* Tarjetas resumen */}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white shadow-md rounded-xl p-6 flex items-center gap-4">
           <span className="text-green-600 text-3xl">🚲</span>
@@ -28,7 +28,6 @@ const DashboardAdmin = () => {
         </div>
       </div>
 
-      {/* Tablas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl shadow-md p-4">
           <h4 className="font-semibold mb-3">Estaciones</h4>
@@ -87,7 +86,7 @@ const DashboardAdmin = () => {
         </div>
       </div>
 
-      {/* Gráficas (simuladas como contenedores por ahora) */}
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-md p-4">
           <h4 className="font-semibold mb-3">Uso por Día/Estación</h4>

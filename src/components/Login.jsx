@@ -45,14 +45,13 @@ export default function AuthTabs({ onLogin }) {
       isAdmin: isAdmin
     };
 
-    // Guardar en localStorage para que AdminRoute pueda leerlo
     localStorage.setItem('user', JSON.stringify(userData));
 
     setShowWelcomeModal(true);
 
       setTimeout(() => {
       onLogin(userData);
-      navigate(isAdmin ? '/admin' : '/dashboard'); // ✅ Redirige según el rol
+      navigate(isAdmin ? '/admin' : '/dashboard'); 
     }, 2000);
     } catch (err) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
@@ -107,7 +106,7 @@ export default function AuthTabs({ onLogin }) {
 
   return (
     <div className="relative">
-      {/* Modal de bienvenida */}
+    
       {showWelcomeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg text-center max-w-sm">
@@ -117,7 +116,7 @@ export default function AuthTabs({ onLogin }) {
         </div>
       )}
 
-      {/* Contenedor principal */}
+      
       <div className="max-w-md mx-auto mt-10 p-6 border-spacing-4 rounded-3xl shadow-2xl bg-white">
         <div className="flex mb-6 border-b">
           <button
@@ -136,7 +135,6 @@ export default function AuthTabs({ onLogin }) {
 
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
-        {/* Formulario Login */}
         {activeTab === 'login' && (
           <form onSubmit={handleLogin}>
             <input
@@ -161,7 +159,7 @@ export default function AuthTabs({ onLogin }) {
           </form>
         )}
 
-        {/* Formulario Registro */}
+
         {activeTab === 'register' && (
           <form onSubmit={handleRegister}>
             <input

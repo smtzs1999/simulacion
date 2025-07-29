@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import Temporizador from './Temporizador';
 
 const customIcon = new L.Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -9,7 +10,7 @@ const customIcon = new L.Icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 const redIcon = new L.Icon({
@@ -18,9 +19,8 @@ const redIcon = new L.Icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
-
 
 const FlyToLocation = ({ location }) => {
   const map = useMap();
@@ -40,6 +40,7 @@ const ListaBicicletas = () => {
   const [location, setLocation] = useState([19.4326, -99.1332]);
   const [focusedLocation, setFocusedLocation] = useState(null);
   const [focusedStationId, setFocusedStationId] = useState(null);
+  const [viajeActivo, setViajeActivo] = useState(null);
   const [total, setTotal] = useState({ bikes: 0, slots: 0 });
 
   useEffect(() => {
@@ -62,9 +63,7 @@ const ListaBicicletas = () => {
       valenbisi: '/valenbisi.json',
     };
 
-    const filePath = fileMap[selectedNetwork.id];
-
-    fetch(filePath)
+    fetch(fileMap[selectedNetwork.id])
       .then((res) => res.json())
       .then((data) => {
         const net = data.network;
@@ -77,16 +76,7 @@ const ListaBicicletas = () => {
       });
   }, [selectedNetwork]);
 
-  const handleNetworkChange = (e) => {
-    const selected = networks.find((net) => net.id === e.target.value);
-    setSelectedNetwork(selected);
-  };
-
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value.toLowerCase());
-  };
-
-  const handleRent = (stationId) => {
+  const handleRent = (stationId, stationName) => {
     setStations((prev) =>
       prev.map((s) =>
         s.id === stationId && s.free_bikes > 0
@@ -94,6 +84,7 @@ const ListaBicicletas = () => {
           : s
       )
     );
+    setViajeActivo({ id: stationId, name: stationName });
   };
 
   const handleReturn = (stationId) => {
@@ -104,6 +95,16 @@ const ListaBicicletas = () => {
           : s
       )
     );
+    setViajeActivo(null);
+  };
+
+  const handleNetworkChange = (e) => {
+    const selected = networks.find((net) => net.id === e.target.value);
+    setSelectedNetwork(selected);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value.toLowerCase());
   };
 
   const filteredStations = stations.filter((station) =>
@@ -121,8 +122,11 @@ const ListaBicicletas = () => {
             value={selectedNetwork?.id}
             className="block w-full lg:w-64 px-4 py-2 rounded-lg border shadow bg-white text-gray-800"
           >
-            <option value="ecobici">Ecobici CDMX 🇲🇽</option>
-            <option value="valenbisi">Valenbisi 🇪🇸</option>
+            {networks.map((net) => (
+              <option key={net.id} value={net.id}>
+                {net.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -142,7 +146,7 @@ const ListaBicicletas = () => {
         </div>
       </div>
 
-      {/* Buscador */}
+    
       <div className="mb-6">
         <input
           type="text"
@@ -154,7 +158,7 @@ const ListaBicicletas = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Mapa */}
+  
         <div className="flex-1">
           <div className="rounded-xl overflow-hidden shadow-lg border bg-white">
             <MapContainer center={location} zoom={13} scrollWheelZoom={true} className="w-full h-[500px]">
@@ -180,48 +184,63 @@ const ListaBicicletas = () => {
           </div>
         </div>
 
-        {/* Lista */}
+
         <div className="flex flex-col gap-4 w-full lg:w-[400px] max-h-[600px] overflow-y-auto">
-          {filteredStations.map((station) => (
-            <div
-              key={station.id}
-              className="bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-400 hover:shadow-lg transition cursor-pointer"
-              onClick={() => {
-                setFocusedLocation([station.latitude, station.longitude]);
-                setFocusedStationId(station.id);
-              }}
-            >
-              <h4 className="font-bold text-gray-800">{station.name}</h4>
-              <p className="text-sm text-gray-600">{station.extra?.address || 'Sin dirección'}</p>
-              <div className="mt-2 text-sm text-gray-700">
-                <strong>{station.free_bikes}</strong> disponibles<br />
-                <strong>{station.empty_slots}</strong> espacios libres
-              </div>
-              <div className="mt-4 flex gap-2">
-                <button
-                  className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded-md shadow"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRent(station.id);
-                  }}
-                >
-                  Alquilar
-                </button>
-                <button
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-3 py-1 rounded-md shadow"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleReturn(station.id);
-                  }}
-                >
-                  Devolver
-                </button>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                Última actualización: {new Date(station.timestamp).toLocaleTimeString()}
-              </p>
-            </div>
-          ))}
+          {filteredStations.map((station) => {
+  const esActiva = viajeActivo?.id === station.id;
+
+  return (
+    <div
+      key={station.id}
+      className={`bg-white p-4 rounded-lg shadow-md border-l-4 ${
+        esActiva ? 'border-green-500' : 'border-blue-400'
+      } hover:shadow-lg transition cursor-pointer`}
+      onClick={() => {
+        setFocusedLocation([station.latitude, station.longitude]);
+        setFocusedStationId(station.id);
+      }}
+    >
+      <h4 className="font-bold text-gray-800">{station.name}</h4>
+      <p className="text-sm text-gray-600">{station.extra?.address || 'Sin dirección'}</p>
+      <div className="mt-2 text-sm text-gray-700">
+        <strong>{station.free_bikes}</strong> disponibles<br />
+        <strong>{station.empty_slots}</strong> espacios libres
+      </div>
+
+      {esActiva ? (
+        <>
+          <div className="mt-4">
+            <Temporizador activo={true} />
+          </div>
+          <button
+            className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-md shadow"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleReturn(station.id);
+            }}
+          >
+            Devolver bicicleta
+          </button>
+        </>
+      ) : (
+        <button
+          className="mt-4 bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleRent(station.id, station.name);
+          }}
+        >
+          Alquilar bicicleta
+        </button>
+      )}
+
+      <p className="text-xs text-gray-400 mt-3">
+        Última actualización: {new Date(station.timestamp).toLocaleTimeString()}
+      </p>
+    </div>
+  );
+})}
+
         </div>
       </div>
     </div>

@@ -1,34 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-export default function Temporizador({ activo, onStop }) {
+const Temporizador = ({ activo }) => {
   const [segundos, setSegundos] = useState(0);
 
   useEffect(() => {
-    if (!activo) return;
-    const timer = setInterval(() => {
-      setSegundos(s => s + 1);
-    }, 1000);
-    return () => clearInterval(timer);
+    let intervalo;
+
+    if (activo) {
+      intervalo = setInterval(() => {
+        setSegundos((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setSegundos(0);
+    }
+
+    return () => clearInterval(intervalo);
   }, [activo]);
 
-  function formatearTiempo(s) {
-    const min = Math.floor(s / 60);
-    const seg = s % 60;
-    return `${min.toString().padStart(2,'0')}:${seg.toString().padStart(2,'0')}`;
-  }
-
-  if (!activo) return null;
+  const minutos = Math.floor(segundos / 60);
+  const segundosRestantes = segundos % 60;
 
   return (
-    <div className="max-w-sm mx-auto mt-6 p-4 border rounded shadow text-center">
-      <h3 className="text-lg font-semibold mb-2">Tiempo de viaje</h3>
-      <p className="text-3xl font-mono">{formatearTiempo(segundos)}</p>
-      <button
-        onClick={onStop}
-        className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-      >
-        Devolver bicicleta
-      </button>
+    <div className="mt-2 text-sm text-blue-600 font-mono">
+      {String(minutos).padStart(2, "0")}:
+      {String(segundosRestantes).padStart(2, "0")}
     </div>
   );
-}
+};
+
+export default Temporizador;

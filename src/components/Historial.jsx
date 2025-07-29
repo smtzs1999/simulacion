@@ -1,19 +1,25 @@
-export default function Historial({ viajes }) {
-  if (!viajes.length) {
-    return <p className="text-center mt-10 text-gray-600">No hay viajes realizados aún.</p>;
-  }
+const Historial = ({ viajes }) => {
   return (
-    <div className="max-w-md mx-auto mt-6">
-      <h2 className="text-xl font-semibold mb-4">Historial de viajes</h2>
-      <ul className="space-y-2">
-        {viajes.map((viaje, i) => (
-          <li key={i} className="border p-3 rounded shadow">
-            <p><strong>Estación:</strong> {viaje.estacion}</p>
-            <p><strong>Duración:</strong> {viaje.duracion}</p>
-            <p><strong>Fecha:</strong> {viaje.fecha}</p>
-          </li>
-        ))}
-      </ul>
+    <div className="p-4 bg-gray-100 rounded-md shadow-md">
+      <h2 className="text-xl font-bold mb-4">Historial de Viajes</h2>
+      {viajes.length === 0 ? (
+        <p className="text-gray-600">No hay viajes registrados.</p>
+      ) : (
+        <ul className="space-y-2">
+          {viajes.map((viaje, index) => (
+            <li
+              key={index}
+              className="bg-white p-4 rounded-md shadow border border-gray-200"
+            >
+              <p><strong>Estación:</strong> {viaje.estacion}</p>
+              <p><strong>Duración:</strong> {viaje.duracion}</p>
+              <p><strong>Fecha:</strong> {viaje.fecha}</p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
-}
+};
+
+export default Historial;

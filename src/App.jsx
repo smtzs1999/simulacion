@@ -10,13 +10,13 @@ import Historial from "./components/Historial";
 import Perfil from "./components/Perfil";
 import Navbar from "./components/Navbar";
 import { Dashboard } from "./components/Dashboard";
-import AdminRoute from "./components/AdminRoute";
 import DashboardAdmin from "./components/DashboardAdmin";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
   const [viajeActivo, setViajeActivo] = useState(false);
   const [historial, setHistorial] = useState([]);
+  const [viajeEnCurso, setViajeEnCurso] = useState(null);
 
   function handleLogin(user) {
     setUsuario(user);
@@ -32,79 +32,93 @@ function App() {
     setHistorial([]);
   }
 
-  function iniciarViaje(idBici) {
-    setViajeActivo(true);
-    setHistorial((v) => [
-      ...v,
-      {
-        estacion: "Estación Demo",
-        duracion: "En curso",
-        fecha: new Date().toLocaleString(),
-      },
-    ]);
-  }
+  function iniciarViaje(estacion) {
+  setViajeActivo(true);
+  setViajeEnCurso(estacion); 
+  setHistorial((v) => [
+    ...v,
+    {
+      estacion: estacion,
+      duracion: "En curso",
+      fecha: new Date().toLocaleString(),
+      inicio: Date.now(),
+    },
+  ]);
+}
 
-  function terminarViaje() {
-    setViajeActivo(false);
-    setHistorial((v) => {
-      const copia = [...v];
-      const ultimo = copia[copia.length - 1];
-      if (ultimo) ultimo.duracion = "00:05:23"; // Duración simulada
-      return copia;
-    });
-  }
+
+  function terminarViaje(estacion) {
+  setViajeActivo(false);
+  setViajeEnCurso(null); // ← Limpiamos viaje activo
+  setHistorial((v) => {
+    const copia = [...v];
+    const ultimo = copia[copia.length - 1];
+    if (ultimo && ultimo.duracion === "En curso") {
+      const duracion = Math.floor((Date.now() - ultimo.inicio) / 1000);
+      const minutos = Math.floor(duracion / 60);
+      const segundos = duracion % 60;
+      ultimo.duracion = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+    }
+    return copia;
+  });
+}
 
   return (
     <Router>
-  <Navbar user={usuario} onLogout={handleLogout} />
-  <Routes>
-    {/* Público */}
-    <Route path="/login" element={!usuario ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
-    <Route path="/registro" element={!usuario ? <Registro onRegister={handleRegister} /> : <Navigate to="/" />} />
+      <Navbar user={usuario} onLogout={handleLogout} />
+      <Routes>
+      
+        <Route path="/login" element={!usuario ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
+        <Route path="/registro" element={!usuario ? <Registro onRegister={handleRegister} /> : <Navigate to="/" />} />
 
-    {/* Admin */}
-    <Route
-      path="/admin"
-      element={
-        usuario?.isAdmin ? (
-          <DashboardAdmin />
-        ) : (
-          <Navigate to="/" replace />
-        )
-      }
-    />
+     
+        <Route
+          path="/admin"
+          element={
+            usuario?.isAdmin ? (
+              <DashboardAdmin />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
 
-    {/* Usuario */}
-    <Route
-      path="/"
-      element={
-        usuario ? (
-          <>
-            <Dashboard />
-            <MapaEstaciones />
-            <ListaBicicletas onAlquilar={iniciarViaje} />
-            <Temporizador activo={viajeActivo} onStop={terminarViaje} />
-          </>
-        ) : (
-          <Navigate to="/login" replace />
-        )
-      }
-    />
+        <Route
+          path="/"
+          element={
+            usuario ? (
+              <div className="p-4 space-y-4">
+                <Dashboard />
+                <MapaEstaciones />
+                <ListaBicicletas
+                onAlquilar={iniciarViaje}
+                onDevolver={terminarViaje}
+                viajeActivo={viajeActivo}
+                viajeEnCurso={viajeEnCurso}
+              />
 
-    <Route
-      path="/historial"
-      element={usuario ? <Historial viajes={historial} /> : <Navigate to="/login" />}
-    />
-    <Route
-      path="/perfil"
-      element={usuario ? <Perfil usuario={usuario} /> : <Navigate to="/login" />}
-    />
 
-    {/* Catch-all */}
-    <Route path="*" element={<Navigate to="/" replace />} />
-  </Routes>
-</Router>
+                <Temporizador activo={viajeActivo} onStop={terminarViaje} />
+              </div>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
 
+        <Route
+          path="/historial"
+          element={usuario ? <Historial viajes={historial} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/perfil"
+          element={usuario ? <Perfil usuario={usuario} /> : <Navigate to="/login" />}
+        />
+
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
   );
 }
 
