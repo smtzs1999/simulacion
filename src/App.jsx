@@ -108,7 +108,7 @@ function App() {
 
         <Route
           path="/historial"
-          element={usuario ? <Historial viajes={historial} /> : <Navigate to="/login" />}
+          element={Historial ? <Historial viajes={historial} /> : <Navigate to="/login" />}
         />
         <Route
           path="/perfil"
