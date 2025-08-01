@@ -60,7 +60,7 @@ const RoutingMachine = ({ origen, destino }) => {
   return null;
 };
 
-const ListaBicicletas = () => {
+const ListaBicicletas = ( ) => {
   const [networks, setNetworks] = useState([]);
   const [selectedNetwork, setSelectedNetwork] = useState(null);
   const [stations, setStations] = useState([]);
@@ -115,7 +115,9 @@ const ListaBicicletas = () => {
   }, [historial]);
 
   const handleRent = (stationId, stationName, lat, lng) => {
+    
     setStations((prev) =>
+      
       prev.map((s) =>
         s.id === stationId && s.free_bikes > 0
           ? { ...s, free_bikes: s.free_bikes - 1, empty_slots: s.empty_slots + 1 }
@@ -126,16 +128,7 @@ const ListaBicicletas = () => {
     setDestino(null);
 
     // Añadir viaje al historial
-    setHistorial((h) => [
-      ...h,
-      {
-        inicio: stationName,
-        destino: null,
-        duracion: 'En curso',
-        fecha: new Date().toLocaleString(),
-        inicioTimestamp: Date.now(),
-      },
-    ]);
+    setHistorial((h) => [...h, { inicio: stationName, destino: null, duracion: 'En curso', fecha: new Date().toLocaleString(), inicioTimestamp: Date.now() }]);
   };
 
   const handleReturn = (stationId) => {
@@ -171,6 +164,10 @@ const ListaBicicletas = () => {
       setDestino({ id: station.id, lat: station.latitude, lng: station.longitude });
     }
   };
+   const handleNetworkChange = (e) => {
+    const selected = networks.find((net) => net.id === e.target.value);
+    setSelectedNetwork(selected);
+  };
 
   const handleSearchChange = (e) => setSearch(e.target.value.toLowerCase());
 
@@ -181,6 +178,41 @@ const ListaBicicletas = () => {
     : filteredStations;
 
   return (
+    <div className="min-h-screen bg-gradient-to-tr from-slate-100 to-slate-300 p-6">
+      {/* Controles */}
+      <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Ciudad</label>
+          <select
+            onChange={handleNetworkChange}
+            value={selectedNetwork?.id}
+            className="block w-full lg:w-64 px-4 py-2 rounded-lg border shadow bg-white text-gray-800"
+          >
+            {networks.map((net) => (
+              <option key={net.id} value={net.id}>
+                {net.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex gap-4">
+          <div className="bg-white rounded-xl shadow p-4 w-40 text-center border-l-4 border-green-500">
+            <div className="text-sm text-gray-500">Bicicletas</div>
+            <div className="text-xl font-bold text-green-600">{total.bikes}</div>
+          </div>
+          <div className="bg-white rounded-xl shadow p-4 w-40 text-center border-l-4 border-blue-500">
+            <div className="text-sm text-gray-500">Espacios libres</div>
+            <div className="text-xl font-bold text-blue-600">{total.slots}</div>
+          </div>
+          <div className="bg-white rounded-xl shadow p-4 w-40 text-center border-l-4 border-purple-500">
+            <div className="text-sm text-gray-500">Estaciones</div>
+            <div className="text-xl font-bold text-purple-600">{stations.length}</div>
+          </div>
+        </div>
+      </div>
+      
+
     <div className="min-h-screen bg-gradient-to-tr from-slate-100 to-slate-300 p-6">
       <div className="mb-4">
         <input
@@ -309,6 +341,7 @@ const ListaBicicletas = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

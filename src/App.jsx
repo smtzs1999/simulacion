@@ -1,3 +1,5 @@
+import React from 'react';
+
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
@@ -12,11 +14,19 @@ import Navbar from "./components/Navbar";
 import { Dashboard } from "./components/Dashboard";
 import DashboardAdmin from "./components/DashboardAdmin";
 
+
 function App() {
   const [usuario, setUsuario] = useState(null);
   const [viajeActivo, setViajeActivo] = useState(false);
-  const [historial, setHistorial] = useState([]);
+  // const [historial, setHistorial] = useState([]);
   const [viajeEnCurso, setViajeEnCurso] = useState(null);
+  const [historial, setHistorial] = React.useState(() => {
+    const saved = localStorage.getItem('historialViajes');
+    return saved ? JSON.parse(saved) : [];
+  });
+  React.useEffect(() => {
+    localStorage.setItem('historialViajes', JSON.stringify(historial));
+  }, [historial]);
 
   function handleLogin(user) {
     setUsuario(user);
@@ -65,7 +75,7 @@ function App() {
 
   return (
     <Router>
-      <Navbar user={usuario} onLogout={handleLogout} />
+      <Navbar user={usuario} onLogout={handleLogout} historial={historial} />
       <Routes>
       
         <Route path="/login" element={!usuario ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
@@ -95,6 +105,7 @@ function App() {
                 onDevolver={terminarViaje}
                 viajeActivo={viajeActivo}
                 viajeEnCurso={viajeEnCurso}
+                historial={historial} setHistorial={setHistorial}
               />
 
 

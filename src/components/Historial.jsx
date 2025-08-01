@@ -21,41 +21,25 @@
 //     </div>
 //   );
 // };
-
+import Navbar from "./Navbar";
 // export default Historial;
-
-import React, { useState, useEffect } from 'react';
-
-const HistorialDeViajes = () => {
-  const [historial, setHistorial] = useState([]);
-
-  useEffect(() => {
-    const viajesGuardados = localStorage.getItem('historialViajes');
-    if (viajesGuardados) {
-      setHistorial(JSON.parse(viajesGuardados));
-    }
-  }, []);
+const HistorialDeViajes = ({ historial = [] }) => {
+  if (!historial.length) {
+    return <p className="text-gray-500 text-center">Aún no has realizado ningún viaje.</p>;
+  }
 
   return (
-    <div className="max-w-4xl mx-auto mt-6 p-4">
-      <h2 className="text-2xl font-semibold mb-4">Historial de Viajes</h2>
-      {historial.length === 0 ? (
-        <p className="text-gray-600">Aún no has realizado ningún viaje.</p>
-      ) : (
-        <ul className="space-y-4">
-          {historial.map((viaje, index) => (
-            <li key={index} className="border p-4 rounded-lg shadow">
-              <p><span className="font-semibold">Inicio:</span> {viaje.inicio}</p>
-              <p><span className="font-semibold">Destino:</span> {viaje.destino}</p>
-              <p><span className="font-semibold">Duración:</span> {viaje.duracion}</p>
-              <p><span className="text-sm text-gray-500">{viaje.fecha}</span></p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <ul className="max-h-[400px] overflow-y-auto space-y-3 pr-2">
+      {historial.map((viaje, index) => (
+        <li key={index} className="border border-gray-200 rounded-lg p-4 shadow-sm">
+          <p><strong>Inicio:</strong> {viaje.inicio || viaje.estacion || "Desconocido"}</p>
+          <p><strong>Destino:</strong> {viaje.destino || "-"}</p>
+          <p><strong>Duración:</strong> {viaje.duracion || "No disponible"}</p>
+          <p className="text-sm text-gray-400">{viaje.fecha || "Fecha no disponible"}</p>
+        </li>
+      ))}
+    </ul>
   );
 };
 
 export default HistorialDeViajes;
-

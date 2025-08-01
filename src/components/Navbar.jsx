@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Camera } from 'lucide-react'; 
+import HistorialDeViajes from './Historial';
 
-const Navbar = ({ user, onLogout }) => {
+const Navbar = ({ user, onLogout, historial }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [profileImage, setProfileImage] = useState('../src/assets/imagen2.webp'); 
+  const [showHistorial, setShowHistorial] = useState(false);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -18,23 +20,33 @@ const Navbar = ({ user, onLogout }) => {
 
   return (
     <nav className="bg-blue-100 text-gray-800 flex justify-between items-center shadow-md px-8 py-6 font-semibold"> 
- 
-
-   
       <div className="text-4xl font-bold flex items-center gap-6">
         <img src="../src/assets/biciS.jpeg" alt="Logo" className="h-20 w-20 rounded-full shadow-lg" />
         <span className="text-blue-700">BiciSmart</span>
       </div>
 
-
-      
       {user && (
         <div className="relative flex items-center gap-8">
           <span className="text-xl">Hola, <strong>{user.nombre}</strong></span>
 
-          <a href="/historial" className="text-blue-700 hover:underline text-xl">Historial</a>
+          <div className="relative">
+            <button
+              onClick={() => setShowHistorial(!showHistorial)}
+              className="text-blue-700 hover:underline text-xl"
+            >
+              Historial
+            </button>
 
-          
+            {/* Panel desplegable */}
+            {showHistorial && (
+              <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
+                <h3 className="text-lg font-semibold mb-3 text-center">Historial de Viajes</h3>
+                <HistorialDeViajes historial={historial} />
+              </div>
+            )}
+          </div>
+        
+
           <div className="relative">
             <img
               src={profileImage}
@@ -43,10 +55,8 @@ const Navbar = ({ user, onLogout }) => {
               onClick={() => setShowMenu(!showMenu)}
             />
 
-      
             {showMenu && (
               <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-xl border z-20 p-8 text-center animate-fade-in">
-           
                 <div className="flex justify-center">
                   <img
                     src={profileImage}
@@ -55,11 +65,9 @@ const Navbar = ({ user, onLogout }) => {
                   />
                 </div>
 
-            
                 <h3 className="text-2xl font-semibold mt-5">{user.nombre}</h3>
                 <p className="text-lg text-gray-500 break-words">{user.email || user.correo}</p>
 
-             
                 <div className="mt-6">
                   <label className="text-lg text-gray-600 block mb-2 cursor-pointer">
                     Cambiar imagen
@@ -72,7 +80,6 @@ const Navbar = ({ user, onLogout }) => {
                   </label>
                 </div>
 
-             
                 <div className="mt-5 flex justify-center">
                   <Camera className="text-blue-500 w-8 h-8" />
                 </div>
@@ -88,6 +95,8 @@ const Navbar = ({ user, onLogout }) => {
           </div>
         </div>
       )}
+
+      
     </nav>
   );
 };
