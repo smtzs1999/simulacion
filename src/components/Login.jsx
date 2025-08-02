@@ -12,6 +12,8 @@ export default function AuthTabs({ onLogin }) {
   const [error, setError] = useState('');
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const navigate = useNavigate();
+  const [confirmPassword, setConfirmPassword] = useState('');
+
 
   function validarEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -19,48 +21,53 @@ export default function AuthTabs({ onLogin }) {
   }
   const adminEmails = ['admin@gmail.com', 'supervisor@empresa.com'];
 
-  async function handleLogin(e) {
-    e.preventDefault();
+ async function handleLogin(e) {
+  e.preventDefault();
 
-    if (!validarEmail(email)) {
-      setError('El correo no es válido');
-      return;
-    }
-    if (!password.trim()) {
-      setError('La contraseña es obligatoria');
-      return;
-    }
+  if (!validarEmail(email)) {
+    setError('El correo no es válido');
+    return;
+  }
 
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      const snapshot = await get(ref(database, 'usuarios/' + user.uid));
-      const data = snapshot.exists() ? snapshot.val() : {};
-      const isAdmin = adminEmails.includes(user.email); 
-      setShowWelcomeModal(true); // Mostrar modal de bienvenida
-      const userData = {
-      email: user.email,
-      id: user.uid,
-      nombre: data.nombre || 'Usuario',
-      isAdmin: isAdmin
-    };
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-    localStorage.setItem('user', JSON.stringify(userData));
+    // Obtener datos del usuario normal
+    const snapshot = await get(ref(database, 'usuarios/' + user.uid));
+    const data = snapshot.exists() ? snapshot.val() : {};
+    const emailKey = user.email.replace(/\./g, ',');
+    const adminSnapshot = await get(ref(database, 'administradores/' + emailKey));
+    const isAdmin = adminSnapshot.exists() && adminSnapshot.val() === true;
 
     setShowWelcomeModal(true);
 
-      setTimeout(() => {
-      onLogin(userData);
-      navigate(isAdmin ? '/admin' : '/dashboard'); 
-    }, 2000);
-    } catch (err) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError('Correo o contraseña incorrectos');
-      } else {
-        setError('Error al iniciar sesión: ' + err.message);
-      }
+    const userData = {
+  email: user.email,
+  id: user.uid,
+  nombre: data.nombre || 'Usuario',
+  isAdmin: isAdmin
+};
+
+
+    console.log('Usuario logueado:', userData); // <- Aquí para debug
+
+    localStorage.setItem('user', JSON.stringify(userData));
+
+    // Quita el setTimeout para pruebas
+    onLogin(userData);
+
+  } catch (err) {
+    if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      setError('Correo o contraseña incorrectos');
+    } else {
+      setError('Error al iniciar sesión: ' + err.message);
     }
   }
+}
+
+
+
 
   async function handleRegister(e) {
     e.preventDefault();
@@ -95,6 +102,8 @@ export default function AuthTabs({ onLogin }) {
       setEmail('');
       setPassword('');
       setNombre('');
+      setConfirmPassword('');
+
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') {
         setError('El correo ya está registrado');
@@ -186,6 +195,16 @@ export default function AuthTabs({ onLogin }) {
               onChange={e => setPassword(e.target.value)}
               required
             />
+
+            <input
+  className="w-full p-2 mb-4 border rounded-xl border-gray-300"
+  type="password"
+  placeholder="Confirmar contraseña"
+  value={confirmPassword}
+  onChange={e => setConfirmPassword(e.target.value)}
+  required
+/>
+
             <button type="submit" className="bg-green-600 text-white px-4 py-2 hover:bg-green-700 w-full rounded-xl">
               Registrarse
             </button>

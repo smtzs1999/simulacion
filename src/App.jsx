@@ -1,7 +1,8 @@
 import React from 'react';
 
-import { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useState,useEffect } from "react";
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+
 
 import Login from "./components/Login";
 import Registro from "./components/Registro";
@@ -14,8 +15,11 @@ import Navbar from "./components/Navbar";
 import { Dashboard } from "./components/Dashboard";
 import DashboardAdmin from "./components/DashboardAdmin";
 
+// import { useLocation, useNavigate } from 'react-router-dom';
 
 function App() {
+  const location = useLocation();
+const navigate = useNavigate();
   const [usuario, setUsuario] = useState(null);
   const [viajeActivo, setViajeActivo] = useState(false);
   // const [historial, setHistorial] = useState([]);
@@ -73,8 +77,19 @@ function App() {
   });
 }
 
+useEffect(() => {
+  if (usuario) {
+    if (usuario.isAdmin) {
+      navigate('/admin', { replace: true });
+    } else {
+      navigate('/', { replace: true });
+    }
+  }
+}, [usuario]);
+
+
   return (
-    <Router>
+    <>
       <Navbar user={usuario} onLogout={handleLogout} historial={historial} />
       <Routes>
       
@@ -129,7 +144,7 @@ function App() {
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </Router>
+    </>
   );
 }
 
