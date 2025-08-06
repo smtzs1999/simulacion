@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -108,12 +108,16 @@ useEffect(() => {
     if (!selectedNetwork) return;
 
     const dbRef = ref(database, `redes_estaciones/network`);
+
+
+
     onValue(
       dbRef,
       (snapshot) => {
         const data = snapshot.val();
         if (!data || !data.stations) {
-          console.error("No hay estaciones o datos inválidos en Firebase");
+  alert("Error: No se encontraron estacion")
+
           return;
         }
 
@@ -181,6 +185,7 @@ useEffect(() => {
         const minutos = Math.floor(duracionSegs / 60);
         const segundos = duracionSegs % 60;
         viajeEnCurso.duracion = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+
         const estacionDestino = stations.find(s => s.id === stationId);
         viajeEnCurso.destino = estacionDestino ? estacionDestino.name : 'Desconocido';
       }
@@ -228,9 +233,9 @@ useEffect(() => {
 ))}
 
   </select>
-  <div className="text-gray-600 mt-1 italic">
+  {/* <div className="text-gray-600 mt-1 italic">
   Ciudad: {selectedNetwork?.location?.city || cityName || 'N/A'}
-</div>
+</div> */}
 
 </div>
 
@@ -296,67 +301,114 @@ useEffect(() => {
 
             return (
               <div
-                key={station.id}
-                className={`bg-white p-4 rounded-lg shadow-md border-l-4 ${
-                  esActiva ? 'border-green-500' : esDestino ? 'border-purple-500' : 'border-blue-400'
-                } hover:shadow-lg transition cursor-pointer`}
-                onClick={() => setFocusedLocation([station.latitude, station.longitude])}
-              >
-                <h4 className="font-bold text-gray-800">{station.name}</h4>
-                <p className="text-sm text-gray-600">{station.extra?.address || 'Sin dirección'}</p>
-                <div className="mt-2 text-sm text-gray-700">
-                  <strong>{station.free_bikes}</strong> disponibles<br />
-                  <strong>{station.empty_slots}</strong> espacios libres
-                </div>
+  key={station.id}
+  className={`border-2 ${
+  esActiva ? 'border-green-500' : esDestino ? 'border-purple-500' : 'border-gray-300'
+} hover:shadow-lg transition cursor-pointer relative`}
+onClick={() => setFocusedLocation([station.latitude, station.longitude])}
+>
+  {/* Header */}
+  <div className="flex justify-between items-center mb-2">
+    <h4 className="font-bold text-gray-800">{station.name}</h4>
+    <span
+      className={`text-xs font-semibold px-2 py-1 rounded ${
+        station.free_bikes === 0
+          ? 'bg-red-100 text-red-600'
+          : station.empty_slots === 0
+          ? 'bg-yellow-100 text-yellow-700'
+          : 'bg-green-100 text-green-700'
+      }`}
+    >
+      {station.free_bikes === 0
+        ? 'Sin bicis'
+        : station.empty_slots === 0
+        ? 'Llena'
+        : 'Disponible'}
+    </span>
+  </div>
 
-                {esActiva ? (
-                  <>
-                    <Temporizador activo={true} />
-                    {destino ? (
-                      <p className="mt-3 text-sm text-gray-600">Dirígete a la estación seleccionada para devolver.</p>
-                    ) : (
-                      <p className="mt-3 text-sm text-gray-600">Elige una estación destino haciendo click en la lista.</p>
-                    )}
-                  </>
-                ) : esDestino && viajeActivo ? (
-                  <button
-                    className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-md shadow"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleReturn(station.id);
-                    }}
-                  >
-                    Devolver bicicleta
-                  </button>
-                ) : puedeElegirDestino ? (
-                  <button
-                    className="mt-4 bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSetDestino(station);
-                    }}
-                    disabled={esDestino}
-                  >
-                    {esDestino ? 'Destino seleccionado' : 'Elegir como destino'}
-                  </button>
-                ) : (
-                  !viajeActivo && station.free_bikes > 0 && (
-                    <button
-                      className="mt-4 bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRent(station.id, station.name, station.latitude, station.longitude);
-                      }}
-                    >
-                      Alquilar bicicleta
-                    </button>
-                  )
-                )}
 
-                <p className="text-xs text-gray-400 mt-3">
-                  Última actualización: {new Date(station.timestamp).toLocaleTimeString()}
-                </p>
-              </div>
+  {/* Dirección */}
+  <p className="text-sm text-gray-600 mb-2">{station.extra?.address || 'Sin dirección'}</p>
+
+  {/* Estado visual */}
+  <div className="flex items-center justify-between text-sm text-gray-700">
+    <div>
+      🚲 <strong>{station.free_bikes}</strong> bicis
+    </div>
+    <div>
+      🅿️ <strong>{station.empty_slots}</strong> espacios
+    </div>
+  </div>
+
+  {/* Barra visual de ocupación */}
+  <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+  <div
+    className="bg-blue-500 h-2 rounded-full"
+    style={{
+      width: `${
+        (station.free_bikes / (station.free_bikes + station.empty_slots)) * 100 || 0
+      }%`,
+    }}
+  ></div>
+</div>
+
+
+  {/* Temporizador, botones, acciones */}
+  {esActiva ? (
+    <>
+      <Temporizador activo={true} />
+      {destino ? (
+        <p className="mt-3 text-sm text-gray-600">
+          Dirígete a la estación seleccionada para devolver.
+        </p>
+      ) : (
+        <p className="mt-3 text-sm text-gray-600">
+          Elige una estación destino haciendo click en la lista.
+        </p>
+      )}
+    </>
+  ) : esDestino && viajeActivo ? (
+    <button
+      className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-md shadow"
+      onClick={(e) => {
+        e.stopPropagation();
+        handleReturn(station.id);
+      }}
+    >
+      Devolver bicicleta
+    </button>
+  ) : puedeElegirDestino ? (
+    <button
+      className="mt-4 bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow"
+      onClick={(e) => {
+        e.stopPropagation();
+        handleSetDestino(station);
+      }}
+      disabled={esDestino}
+    >
+      {esDestino ? 'Destino seleccionado' : 'Elegir como destino'}
+    </button>
+  ) : (
+    !viajeActivo &&
+    station.free_bikes > 0 && (
+      <button
+        className="mt-4 bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleRent(station.id, station.name, station.latitude, station.longitude);
+        }}
+      >
+        Alquilar bicicleta
+      </button>
+    )
+  )}
+
+  <p className="text-xs text-gray-400 mt-3">
+    Última actualización: {new Date(station.timestamp).toLocaleTimeString()}
+  </p>
+</div>
+
             );
           })}
 
