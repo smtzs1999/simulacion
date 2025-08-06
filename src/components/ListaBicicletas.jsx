@@ -1,4 +1,4 @@
- import React, { useEffect, useState } from 'react';
+ import React, { useEffect, useState,useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -10,7 +10,7 @@ import {  database } from '../firebase/firebase';
 import HistorialDeViajes from './Historial';
 import { getDatabase, ref, push, onValue } from "firebase/database";
 import { getAuth } from "firebase/auth";
-
+import AlertMessage from './AlertMessage';
 
 const customIcon = new L.Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -77,7 +77,72 @@ const ListaBicicletas = ( ) => {
   const [destino, setDestino] = useState(null);
   const [total, setTotal] = useState({ bikes: 0, slots: 0 });
   const [cityName, setCityName] = useState('');
+const [alert, setAlert] = useState(null);
+const [confirmAlquiler, setConfirmAlquiler] = useState({ show: false, station: null });
+const alertRef = useRef(null);
 
+
+const showAlert = (message, type = 'info') => {
+    setAlert({ show: true, message, type });
+  };
+  const closeAlert = () => setAlert({ show: false, message: '', type: 'info' });
+
+  const requestRent = (station) => {
+    if (station.free_bikes === 0) {
+      showAlert('No hay bicicletas disponibles en esta estación.', 'error');
+      return;
+    }
+    setConfirmAlquiler({ show: true, station });
+  };
+  const confirmRent = () => {
+    const station = confirmAlquiler.station;
+    if (!station) return;
+
+    // Actualizar estados igual que antes
+    setStations((prev) =>
+      prev.map((s) =>
+        s.id === station.id && s.free_bikes > 0
+          ? { ...s, free_bikes: s.free_bikes - 1, empty_slots: s.empty_slots + 1 }
+          : s
+      )
+    );
+    setViajeActivo({ id: station.id, name: station.name, lat: station.latitude, lng: station.longitude });
+    setDestino(null);
+
+    showAlert(`Has alquilado una bicicleta en la estación "${station.name}". Recuerda elegir una estación destino para devolverla.`, 'success');
+
+    // Añadir viaje al historial
+    setHistorial((h) => [...h, { inicio: station.name, destino: null, duracion: 'En curso', fecha: new Date().toLocaleString(), inicioTimestamp: Date.now() }]);
+
+    setConfirmAlquiler({ show: false, station: null });
+  };
+
+  const mostrarAlerta = (titulo, mensaje, tipo = 'info') => {
+  if (alertRef?.current?.show) {
+    alertRef.current.show(titulo, mensaje, tipo);
+  } else {
+    console.warn('AlertMessage no está listo aún.');
+  }
+};
+
+const alquilarBicicleta = (station) => {
+    // ejemplo simple
+    if (!station || !station.name) {
+      mostrarAlerta('Error', 'Estación no válida.', 'error');
+      return;
+    }
+
+    // Aquí podrías guardar en Firebase y luego...
+    mostrarAlerta(
+      'Alquiler Confirmado',
+      `Has alquilado una bicicleta en la estación "${station.name}". ¡Buen viaje! 🚴‍♂️`,
+      'success'
+    );
+  };
+
+  const cancelRent = () => {
+  setConfirmAlquiler({ show: false, station: null });
+};
 
 
   // Historial local
@@ -258,33 +323,40 @@ useEffect(() => {
 
     // Añadir viaje al historial
     setHistorial((h) => [...h, { inicio: stationName, destino: null, duracion: 'En curso', fecha: new Date().toLocaleString(), inicioTimestamp: Date.now() }]);
+    setAlert({ message: `Has alquilado una bicicleta en ${stationName}`, type: 'success' });
+  setTimeout(() => setAlert(null), 3500);
   };
 
   const handleReturn = (stationId) => {
-  setHistorial((h) => {
-    const copia = [...h];
-    const viajeEnCurso = copia.find((v) => v.duracion === 'En curso');
-    if (viajeEnCurso) {
-      const duracionSegs = Math.floor((Date.now() - viajeEnCurso.inicioTimestamp) / 1000);
-      const minutos = Math.floor(duracionSegs / 60);
-      const segundos = duracionSegs % 60;
-      viajeEnCurso.duracion = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+    setHistorial((h) => {
+      const copia = [...h];
+      const viajeEnCurso = copia.find((v) => v.duracion === 'En curso');
+      if (viajeEnCurso) {
+        const duracionSegs = Math.floor((Date.now() - viajeEnCurso.inicioTimestamp) / 1000);
+        const minutos = Math.floor(duracionSegs / 60);
+        const segundos = duracionSegs % 60;
+        viajeEnCurso.duracion = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
 
-      // Suponiendo que stations está en estado y tiene info de estaciones
-      const estacionDestino = stations.find(s => s.id === stationId);
-      viajeEnCurso.destino = estacionDestino ? estacionDestino.name : 'Desconocido';
+        const estacionDestino = stations.find(s => s.id === stationId);
+        viajeEnCurso.destino = estacionDestino ? estacionDestino.name : 'Desconocido';
 
-      // Guardar en Firebase el viaje completo
-      guardarViajeEnFirebase({
-        ...viajeEnCurso,
-        fecha: new Date().toISOString()
-      });
-    }
-    return copia;
-  });
+        guardarViajeEnFirebase({
+          ...viajeEnCurso,
+          fecha: new Date().toISOString()
+        });
 
-  setViajeActivo(null);
-  setDestino(null);
+        showAlert(`Viaje finalizado en estación "${viajeEnCurso.destino}". Duración: ${viajeEnCurso.duracion}`, 'success');
+      }
+      return copia;
+    });
+
+    setViajeActivo(null);
+    setDestino(null);
+  
+
+  const estacion = stations.find(s => s.id === stationId);
+  setAlert({ message: `Bicicleta devuelta en ${estacion ? estacion.name : 'la estación'}`, type: 'info' });
+  setTimeout(() => setAlert(null), 3500);
 };
 
 
@@ -308,6 +380,14 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-gradient-to-tr from-slate-100 to-slate-300 p-6">
+    {alert && (
+  <AlertMessage
+    message={alert.message}
+    type={alert.type}
+    onClose={() => setAlert(null)}
+  />
+)}
+
       {/* Controles */}
       <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
         <div>
@@ -363,6 +443,7 @@ useEffect(() => {
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="flex-1">
           <div className="rounded-xl overflow-hidden shadow-lg border bg-white">
+            <AlertMessage ref={alertRef} />
             <MapContainer center={location} zoom={13} scrollWheelZoom={true} className="w-full h-[500px]">
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -484,11 +565,13 @@ onClick={() => setFocusedLocation([station.latitude, station.longitude])}
   ) : (
     !viajeActivo &&
     station.free_bikes > 0 && (
+      
       <button
         className="mt-4 bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow"
         onClick={(e) => {
           e.stopPropagation();
           handleRent(station.id, station.name, station.latitude, station.longitude);
+          requestRent(station);
         }}
       >
         Alquilar bicicleta
@@ -503,8 +586,41 @@ onClick={() => setFocusedLocation([station.latitude, station.longitude])}
 
             );
           })}
+          {confirmAlquiler.show && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full text-center">
+            <h3 className="text-lg font-semibold mb-4">Confirmar alquiler</h3>
+            <p className="mb-6">
+              ¿Estás seguro que quieres alquilar una bicicleta en la estación "{confirmAlquiler.station.name}"?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={confirmRent}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                Confirmar
+              </button>
+              <button
+                onClick={cancelRent}
+                className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+{/* Alert general para mensajes */}
+      {alert && (
+  <AlertMessage
+    message={alert.message}
+    type={alert.type}
+    onClose={closeAlert}
+  />
+)}
 
     
+
         </div>
       </div>
     </div>
