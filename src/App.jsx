@@ -120,7 +120,7 @@ useEffect(() => {
                 onDevolver={terminarViaje}
                 viajeActivo={viajeActivo}
                 viajeEnCurso={viajeEnCurso}
-                historial={historial} setHistorial={setHistorial}
+                
               />
 
 

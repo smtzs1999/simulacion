@@ -7,6 +7,7 @@ import 'leaflet-routing-machine';
 import Temporizador from './Temporizador';
 import { ref, onValue } from "firebase/database";
 import {  database } from '../firebase/firebase';
+import HistorialDeViajes from './Historial';
 
 const customIcon = new L.Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -413,7 +414,7 @@ onClick={() => setFocusedLocation([station.latitude, station.longitude])}
           })}
 
           {/* Mostrar historial simple */}
-          <div className="mt-8 p-4 bg-white rounded shadow max-h-64 overflow-y-auto">
+          {/* <div className="mt-8 p-4 bg-white rounded shadow max-h-64 overflow-y-auto">
             <h3 className="font-semibold mb-3 text-gray-700">Historial de viajes</h3>
             {historial.length === 0 ? (
               <p className="text-gray-600 text-sm">No hay viajes realizados aún.</p>
@@ -429,7 +430,7 @@ onClick={() => setFocusedLocation([station.latitude, station.longitude])}
                 ))}
               </ul>
             )}
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
