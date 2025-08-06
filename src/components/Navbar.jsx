@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef  } from 'react';
 import { Camera } from 'lucide-react'; 
 import HistorialDeViajes from './Historial';
+
+
 
 const Navbar = ({ user, onLogout, historial }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [profileImage, setProfileImage] = useState('../src/assets/imagen2.webp'); 
   const [showHistorial, setShowHistorial] = useState(false);
+  const menuRef = useRef(null);
+const historialRef = useRef(null);
+
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -17,6 +22,27 @@ const Navbar = ({ user, onLogout, historial }) => {
       reader.readAsDataURL(file);
     }
   };
+useEffect(() => {
+  function handleClickOutside(event) {
+    if (
+      menuRef.current && !menuRef.current.contains(event.target)
+    ) {
+      setShowMenu(false);
+    }
+
+    if (
+      historialRef.current && !historialRef.current.contains(event.target)
+    ) {
+      setShowHistorial(false);
+    }
+  }
+
+  document.addEventListener('mousedown', handleClickOutside);
+
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+}, []);
 
   return (
     <nav className="bg-blue-100 text-gray-800 flex justify-between items-center shadow-md px-8 py-6 font-semibold"> 
@@ -39,11 +65,15 @@ const Navbar = ({ user, onLogout, historial }) => {
 
             {/* Panel desplegable */}
             {showHistorial && (
-              <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
-                <h3 className="text-lg font-semibold mb-3 text-center">Historial de Viajes</h3>
-                <HistorialDeViajes historial={historial} />
-              </div>
-            )}
+  <div
+    ref={historialRef}
+    className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4"
+  >
+    <h3 className="text-lg font-semibold mb-3 text-center">Historial de Viajes</h3>
+    <HistorialDeViajes historial={historial} />
+  </div>
+)}
+
           </div>
         
 
@@ -56,7 +86,10 @@ const Navbar = ({ user, onLogout, historial }) => {
             />
 
             {showMenu && (
-              <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-xl border z-20 p-8 text-center animate-fade-in">
+  <div
+    ref={menuRef}
+    className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-xl border z-20 p-8 text-center animate-fade-in"
+  >
                 <div className="flex justify-center">
                   <img
                     src={profileImage}

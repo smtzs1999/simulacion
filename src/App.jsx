@@ -5,14 +5,14 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-
 
 
 import Login from "./components/Login";
-import Registro from "./components/Registro";
-import MapaEstaciones from "./components/MapaEstaciones";
+// import Registro from "./components/Registro";
+// import MapaEstaciones from "./components/MapaEstaciones";
 import ListaBicicletas from "./components/ListaBicicletas";
 import Temporizador from "./components/Temporizador";
 import Historial from "./components/Historial";
 import Perfil from "./components/Perfil";
 import Navbar from "./components/Navbar";
-import { Dashboard } from "./components/Dashboard";
+// import { Dashboard } from "./components/Dashboard";
 import DashboardAdmin from "./components/DashboardAdmin";
 
 // import { useLocation, useNavigate } from 'react-router-dom';
@@ -94,7 +94,7 @@ useEffect(() => {
       <Routes>
       
         <Route path="/login" element={!usuario ? <Login onLogin={handleLogin} /> : <Navigate to="/" />} />
-        <Route path="/registro" element={!usuario ? <Registro onRegister={handleRegister} /> : <Navigate to="/" />} />
+        {/* <Route path="/registro" element={!usuario ? <Registro onRegister={handleRegister} /> : <Navigate to="/" />} /> */}
 
      
         <Route
@@ -112,9 +112,9 @@ useEffect(() => {
           path="/"
           element={
             usuario ? (
-              <div className="p-4 space-y-4">
-                <Dashboard />
-                <MapaEstaciones />
+              <div className=" ">
+                {/* <Dashboard /> */}
+                {/* <MapaEstaciones /> */}
                 <ListaBicicletas
                 onAlquilar={iniciarViaje}
                 onDevolver={terminarViaje}

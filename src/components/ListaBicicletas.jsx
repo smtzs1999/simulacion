@@ -5,6 +5,8 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import 'leaflet-routing-machine';
 import Temporizador from './Temporizador';
+import { ref, onValue } from "firebase/database";
+import {  database } from '../firebase/firebase';
 
 const customIcon = new L.Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -70,6 +72,9 @@ const ListaBicicletas = ( ) => {
   const [viajeActivo, setViajeActivo] = useState(null);
   const [destino, setDestino] = useState(null);
   const [total, setTotal] = useState({ bikes: 0, slots: 0 });
+  const [cityName, setCityName] = useState('');
+
+
 
   // Historial local
   const [historial, setHistorial] = useState(() => {
@@ -78,35 +83,62 @@ const ListaBicicletas = ( ) => {
     return guardado ? JSON.parse(guardado) : [];
   });
 
-  useEffect(() => {
-    fetch('/networks.json')
-      .then((res) => res.json())
-      .then((data) => {
-        const filtered = data.filter((net) => ['ecobici', 'valenbisi'].includes(net.id));
-        setNetworks(filtered);
-        setSelectedNetwork(filtered[0]);
-      });
+  // useEffect(() => {
+  //   fetch('/networks.json')
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       const filtered = data.filter((net) => ['ecobici', 'valenbisi'].includes(net.id));
+  //       setNetworks(filtered);
+  //       setSelectedNetwork(filtered[0]);
+  //     });
+  // }, []);
+useEffect(() => {
+    // Si quieres, puedes guardar estas redes también en Firebase,
+    // pero aquí hardcodeamos las disponibles.
+    const availableNetworks = [
+  { id: "ecobici", name: "EcoBici", location: { city: "Ciudad de México" } },
+  { id: "valenbisi", name: "Valenbisi", location: { city: "Valencia" } },
+];
+
+    setNetworks(availableNetworks);
+    setSelectedNetwork(availableNetworks[0]);
   }, []);
 
   useEffect(() => {
     if (!selectedNetwork) return;
 
-    const fileMap = {
-      ecobici: '/ecobici.json',
-      valenbisi: '/valenbisi.json',
-    };
+    const dbRef = ref(database, `redes_estaciones/network`);
+    onValue(
+      dbRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (!data || !data.stations) {
+          console.error("No hay estaciones o datos inválidos en Firebase");
+          return;
+        }
 
-    fetch(fileMap[selectedNetwork.id])
-      .then((res) => res.json())
-      .then((data) => {
-        const net = data.network;
-        setStations(net.stations);
-        setLocation([net.location.latitude, net.location.longitude]);
+        if (data.id !== selectedNetwork.id) {
+          console.warn("La red seleccionada no coincide con los datos en Firebase");
+          // Opcional: manejar esto si tienes más redes en Firebase
+          return;
+        }
 
-        const bikes = net.stations.reduce((sum, st) => sum + (st.free_bikes || 0), 0);
-        const slots = net.stations.reduce((sum, st) => sum + (st.empty_slots || 0), 0);
+        setStations(data.stations);
+        setLocation([data.location.latitude, data.location.longitude]);
+        setCityName(data.location.city); 
+
+        const bikes = data.stations.reduce(
+          (sum, st) => sum + (st.free_bikes || 0),
+          0
+        );
+        const slots = data.stations.reduce(
+          (sum, st) => sum + (st.empty_slots || 0),
+          0
+        );
         setTotal({ bikes, slots });
-      });
+      },
+      { onlyOnce: true } // lee solo una vez, o quita para escucha en tiempo real
+    );
   }, [selectedNetwork]);
 
   // Guardar historial en localStorage cada vez que cambia
@@ -182,19 +214,26 @@ const ListaBicicletas = ( ) => {
       {/* Controles */}
       <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Ciudad</label>
-          <select
-            onChange={handleNetworkChange}
-            value={selectedNetwork?.id}
-            className="block w-full lg:w-64 px-4 py-2 rounded-lg border shadow bg-white text-gray-800"
-          >
-            {networks.map((net) => (
-              <option key={net.id} value={net.id}>
-                {net.name}
-              </option>
-            ))}
-          </select>
-        </div>
+  <label className="block text-sm font-semibold text-gray-700 mb-1">Ciudad</label>
+  <select
+    onChange={handleNetworkChange}
+    value={selectedNetwork?.id}
+    className="block w-full lg:w-64 px-4 py-2 rounded-lg border shadow bg-white text-gray-800"
+  >
+    {networks.map((net) => (
+  <option key={net.id} value={net.id}>
+  {net.location?.city || net.name}
+</option>
+
+))}
+
+  </select>
+  <div className="text-gray-600 mt-1 italic">
+  Ciudad: {selectedNetwork?.location?.city || cityName || 'N/A'}
+</div>
+
+</div>
+
 
         <div className="flex gap-4">
           <div className="bg-white rounded-xl shadow p-4 w-40 text-center border-l-4 border-green-500">
