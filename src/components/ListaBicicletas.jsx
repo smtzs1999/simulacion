@@ -5,9 +5,12 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import 'leaflet-routing-machine';
 import Temporizador from './Temporizador';
-import { ref, onValue } from "firebase/database";
+// import { ref, onValue } from "firebase/database";
 import {  database } from '../firebase/firebase';
 import HistorialDeViajes from './Historial';
+import { getDatabase, ref, push, onValue } from "firebase/database";
+import { getAuth } from "firebase/auth";
+
 
 const customIcon = new L.Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -83,6 +86,82 @@ const ListaBicicletas = ( ) => {
     const guardado = localStorage.getItem('historialViajes');
     return guardado ? JSON.parse(guardado) : [];
   });
+// const guardarViajeEnBD = (viajeEnCurso) => {
+//   const auth = getAuth();
+//   const user = auth.currentUser;
+
+//   if (!user) {
+//     console.error("Usuario no autenticado.");
+//     return;
+//   }
+
+//   const nuevoViaje = {
+//     usuario: user.email,
+//     bicicleta: viajeEnCurso.bicicleta,
+//     estacionInicio: viajeEnCurso.inicio,
+//     estacionFin: viajeEnCurso.fin,
+//     duracion: viajeEnCurso.duracion,
+//     fecha: new Date().toISOString(),
+//   };
+
+//   const viajesRef = ref(database, 'historial_viajes');
+//   push(viajesRef, nuevoViaje)
+//     .then(() => {
+//       console.log("Viaje guardado exitosamente en Firebase");
+//     })
+//     .catch((error) => {
+//       console.error("Error al guardar el viaje:", error);
+//     });
+// };
+
+  const guardarViajeEnFirebase = (viajeEnCurso) => {
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  if (!user) {
+    console.error("Usuario no autenticado.");
+    return;
+  }
+
+  const nuevoViaje = {
+    usuario: user.email,
+    bicicleta: viajeEnCurso.bicicleta || "desconocida",
+    inicio: viajeEnCurso.inicio || "desconocido",
+    destino: viajeEnCurso.destino || "desconocido",
+    duracion: viajeEnCurso.duracion || "00:00",
+    fecha: viajeEnCurso.fecha || new Date().toISOString(),
+  };
+
+  const viajesRef = ref(database, `historial_viajes/${user.uid}`);
+  push(viajesRef, nuevoViaje)
+    .then(() => {
+      console.log("Viaje guardado exitosamente en Firebase");
+    })
+    .catch((error) => {
+      console.error("Error al guardar el viaje:", error);
+    });
+};
+
+
+const obtenerHistorial = () => {
+  const auth = getAuth();
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const db = getDatabase();
+  const historialRef = ref(db, `historial_viajes/${user.uid}`);
+
+  onValue(historialRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      const historialFirebase = Object.values(data);
+      setHistorial(historialFirebase);
+    } else {
+      setHistorial([]);
+    }
+  });
+};
+
 
   // useEffect(() => {
   //   fetch('/networks.json')
@@ -147,9 +226,22 @@ useEffect(() => {
   }, [selectedNetwork]);
 
   // Guardar historial en localStorage cada vez que cambia
-  useEffect(() => {
-    localStorage.setItem('historialViajes', JSON.stringify(historial));
-  }, [historial]);
+//   useEffect(() => {
+//   guardarViajeEnFirebase(nuevoViaje);
+// }, [historial]);
+useEffect(() => {
+  const auth = getAuth();
+  const unsubscribe = auth.onAuthStateChanged((user) => {
+    if (user) {
+      obtenerHistorial();
+    } else {
+      setHistorial([]);
+    }
+  });
+  return () => unsubscribe();
+}, []);
+
+
 
   const handleRent = (stationId, stationName, lat, lng) => {
     
@@ -169,33 +261,32 @@ useEffect(() => {
   };
 
   const handleReturn = (stationId) => {
-    setStations((prev) =>
-      prev.map((s) =>
-        s.id === stationId
-          ? { ...s, free_bikes: s.free_bikes + 1, empty_slots: s.empty_slots - 1 }
-          : s
-      )
-    );
+  setHistorial((h) => {
+    const copia = [...h];
+    const viajeEnCurso = copia.find((v) => v.duracion === 'En curso');
+    if (viajeEnCurso) {
+      const duracionSegs = Math.floor((Date.now() - viajeEnCurso.inicioTimestamp) / 1000);
+      const minutos = Math.floor(duracionSegs / 60);
+      const segundos = duracionSegs % 60;
+      viajeEnCurso.duracion = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
 
-    // Actualizar historial: calcular duración y agregar destino
-    setHistorial((h) => {
-      const copia = [...h];
-      const viajeEnCurso = copia.find((v) => v.duracion === 'En curso');
-      if (viajeEnCurso) {
-        const duracionSegs = Math.floor((Date.now() - viajeEnCurso.inicioTimestamp) / 1000);
-        const minutos = Math.floor(duracionSegs / 60);
-        const segundos = duracionSegs % 60;
-        viajeEnCurso.duracion = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+      // Suponiendo que stations está en estado y tiene info de estaciones
+      const estacionDestino = stations.find(s => s.id === stationId);
+      viajeEnCurso.destino = estacionDestino ? estacionDestino.name : 'Desconocido';
 
-        const estacionDestino = stations.find(s => s.id === stationId);
-        viajeEnCurso.destino = estacionDestino ? estacionDestino.name : 'Desconocido';
-      }
-      return copia;
-    });
+      // Guardar en Firebase el viaje completo
+      guardarViajeEnFirebase({
+        ...viajeEnCurso,
+        fecha: new Date().toISOString()
+      });
+    }
+    return copia;
+  });
 
-    setViajeActivo(null);
-    setDestino(null);
-  };
+  setViajeActivo(null);
+  setDestino(null);
+};
+
 
   const handleSetDestino = (station) => {
     if (viajeActivo && station.id !== viajeActivo.id) {
@@ -413,24 +504,7 @@ onClick={() => setFocusedLocation([station.latitude, station.longitude])}
             );
           })}
 
-          {/* Mostrar historial simple */}
-          {/* <div className="mt-8 p-4 bg-white rounded shadow max-h-64 overflow-y-auto">
-            <h3 className="font-semibold mb-3 text-gray-700">Historial de viajes</h3>
-            {historial.length === 0 ? (
-              <p className="text-gray-600 text-sm">No hay viajes realizados aún.</p>
-            ) : (
-              <ul className="text-sm space-y-2 max-h-56 overflow-auto">
-                {historial.map((viaje, i) => (
-                  <li key={i} className="border-b border-gray-200 pb-1">
-                    <p><strong>Inicio:</strong> {viaje.inicio}</p>
-                    <p><strong>Destino:</strong> {viaje.destino || '-'}</p>
-                    <p><strong>Duración:</strong> {viaje.duracion}</p>
-                    <p className="text-xs text-gray-400">{viaje.fecha}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div> */}
+    
         </div>
       </div>
     </div>

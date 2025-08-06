@@ -21,25 +21,50 @@
 //     </div>
 //   );
 // };
-import Navbar from "./Navbar";
-// export default Historial;
-const HistorialDeViajes = ({ historial = [] }) => {
-  if (!historial.length) {
-    return <p className="text-gray-500 text-center">Aún no has realizado ningún viaje.</p>;
-  }
+import React, { useEffect, useState } from 'react';
+import { getDatabase, ref, onValue } from "firebase/database";
+import { getAuth } from "firebase/auth";
+
+const ListaBicicletas = () => {
+  const [historial, setHistorial] = useState([]);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        const db = getDatabase();
+        const historialRef = ref(db, `historial_viajes/${user.uid}`);
+        onValue(historialRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) setHistorial(Object.values(data));
+          else setHistorial([]);
+        });
+      } else {
+        setHistorial([]);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
-    <ul className="max-h-[400px] overflow-y-auto space-y-3 pr-2">
-      {historial.map((viaje, index) => (
-        <li key={index} className="border border-gray-200 rounded-lg p-4 shadow-sm">
-          <p><strong>Inicio:</strong> {viaje.inicio || viaje.estacion || "Desconocido"}</p>
-          <p><strong>Destino:</strong> {viaje.destino || "-"}</p>
-          <p><strong>Duración:</strong> {viaje.duracion || "No disponible"}</p>
-          <p className="text-sm text-gray-400">{viaje.fecha || "Fecha no disponible"}</p>
-        </li>
-      ))}
-    </ul>
+    <div>
+      <h2>Historial de viajes</h2>
+      {historial.length === 0 ? (
+        <p>No tienes viajes guardados.</p>
+      ) : (
+        <ul>
+          {historial.map((viaje, i) => (
+            <li key={i}>
+              <p><strong>Inicio:</strong> {viaje.estacionInicio || viaje.inicio}</p>
+              <p><strong>Destino:</strong> {viaje.estacionFin || viaje.destino || '-'}</p>
+              <p><strong>Duración:</strong> {viaje.duracion}</p>
+              <p><small>{new Date(viaje.fecha).toLocaleString()}</small></p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 };
 
-export default HistorialDeViajes;
+export default ListaBicicletas;
