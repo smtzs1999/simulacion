@@ -1,4 +1,4 @@
- import React, { useEffect, useState,useRef } from 'react';
+ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -10,7 +10,8 @@ import {  database } from '../firebase/firebase';
 import HistorialDeViajes from './Historial';
 import { getDatabase, ref, push, onValue } from "firebase/database";
 import { getAuth } from "firebase/auth";
-import AlertMessage from './AlertMessage';
+import Swal from 'sweetalert2';
+
 
 const customIcon = new L.Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -77,72 +78,7 @@ const ListaBicicletas = ( ) => {
   const [destino, setDestino] = useState(null);
   const [total, setTotal] = useState({ bikes: 0, slots: 0 });
   const [cityName, setCityName] = useState('');
-const [alert, setAlert] = useState(null);
-const [confirmAlquiler, setConfirmAlquiler] = useState({ show: false, station: null });
-const alertRef = useRef(null);
-
-
-const showAlert = (message, type = 'info') => {
-    setAlert({ show: true, message, type });
-  };
-  const closeAlert = () => setAlert({ show: false, message: '', type: 'info' });
-
-  const requestRent = (station) => {
-    if (station.free_bikes === 0) {
-      showAlert('No hay bicicletas disponibles en esta estación.', 'error');
-      return;
-    }
-    setConfirmAlquiler({ show: true, station });
-  };
-  const confirmRent = () => {
-    const station = confirmAlquiler.station;
-    if (!station) return;
-
-    // Actualizar estados igual que antes
-    setStations((prev) =>
-      prev.map((s) =>
-        s.id === station.id && s.free_bikes > 0
-          ? { ...s, free_bikes: s.free_bikes - 1, empty_slots: s.empty_slots + 1 }
-          : s
-      )
-    );
-    setViajeActivo({ id: station.id, name: station.name, lat: station.latitude, lng: station.longitude });
-    setDestino(null);
-
-    showAlert(`Has alquilado una bicicleta en la estación "${station.name}". Recuerda elegir una estación destino para devolverla.`, 'success');
-
-    // Añadir viaje al historial
-    setHistorial((h) => [...h, { inicio: station.name, destino: null, duracion: 'En curso', fecha: new Date().toLocaleString(), inicioTimestamp: Date.now() }]);
-
-    setConfirmAlquiler({ show: false, station: null });
-  };
-
-  const mostrarAlerta = (titulo, mensaje, tipo = 'info') => {
-  if (alertRef?.current?.show) {
-    alertRef.current.show(titulo, mensaje, tipo);
-  } else {
-    console.warn('AlertMessage no está listo aún.');
-  }
-};
-
-const alquilarBicicleta = (station) => {
-    // ejemplo simple
-    if (!station || !station.name) {
-      mostrarAlerta('Error', 'Estación no válida.', 'error');
-      return;
-    }
-
-    // Aquí podrías guardar en Firebase y luego...
-    mostrarAlerta(
-      'Alquiler Confirmado',
-      `Has alquilado una bicicleta en la estación "${station.name}". ¡Buen viaje! 🚴‍♂️`,
-      'success'
-    );
-  };
-
-  const cancelRent = () => {
-  setConfirmAlquiler({ show: false, station: null });
-};
+  const [modalAction, setModalAction] = useState(''); 
 
 
   // Historial local
@@ -237,6 +173,42 @@ const obtenerHistorial = () => {
   //       setSelectedNetwork(filtered[0]);
   //     });
   // }, []);
+
+  const handleAlquilar = () => {
+    if (!selectedStation) {
+      showAlert("Selecciona una estación para alquilar", 'warning');
+      return;
+    }
+    if (hasBicicleta) {
+      showAlert("Ya tienes una bicicleta", 'error');
+      return;
+    }
+    setModalAction('alquilar');
+    setShowModal(true);
+  };
+
+  const handleDevolver = () => {
+    if (!hasBicicleta) {
+      showAlert("No tienes una bicicleta para devolver", 'error');
+      return;
+    }
+    if (!selectedStation) {
+      showAlert("Selecciona una estación para devolver", 'warning');
+      return;
+    }
+    setModalAction('devolver');
+    setShowModal(true);
+  };
+   const confirmarAccion = () => {
+    if (modalAction === 'alquilar') {
+      setHasBicicleta(true);
+      showAlert("Bicicleta alquilada exitosamente", 'success');
+    } else if (modalAction === 'devolver') {
+      setHasBicicleta(false);
+      showAlert("Bicicleta devuelta exitosamente", 'success');
+    }
+    setShowModal(false);
+  };
 useEffect(() => {
     // Si quieres, puedes guardar estas redes también en Firebase,
     // pero aquí hardcodeamos las disponibles.
@@ -261,10 +233,10 @@ useEffect(() => {
       (snapshot) => {
         const data = snapshot.val();
         if (!data || !data.stations) {
-  alert("Error: No se encontraron estacion")
+  showAlert("Error: No se encontraron estaciones", "error");
+  return;
+}
 
-          return;
-        }
 
         if (data.id !== selectedNetwork.id) {
           console.warn("La red seleccionada no coincide con los datos en Firebase");
@@ -289,6 +261,19 @@ useEffect(() => {
       { onlyOnce: true } // lee solo una vez, o quita para escucha en tiempo real
     );
   }, [selectedNetwork]);
+
+const showAlert = (mensaje, tipo = 'info') => {
+  Swal.fire({
+    icon: tipo,
+    title: mensaje,
+    timer: 2000,
+    showConfirmButton: false,
+  });
+};
+
+
+
+
 
   // Guardar historial en localStorage cada vez que cambia
 //   useEffect(() => {
@@ -323,40 +308,55 @@ useEffect(() => {
 
     // Añadir viaje al historial
     setHistorial((h) => [...h, { inicio: stationName, destino: null, duracion: 'En curso', fecha: new Date().toLocaleString(), inicioTimestamp: Date.now() }]);
-    setAlert({ message: `Has alquilado una bicicleta en ${stationName}`, type: 'success' });
-  setTimeout(() => setAlert(null), 3500);
   };
 
   const handleReturn = (stationId) => {
-    setHistorial((h) => {
-      const copia = [...h];
-      const viajeEnCurso = copia.find((v) => v.duracion === 'En curso');
-      if (viajeEnCurso) {
-        const duracionSegs = Math.floor((Date.now() - viajeEnCurso.inicioTimestamp) / 1000);
-        const minutos = Math.floor(duracionSegs / 60);
-        const segundos = duracionSegs % 60;
-        viajeEnCurso.duracion = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
-
-        const estacionDestino = stations.find(s => s.id === stationId);
-        viajeEnCurso.destino = estacionDestino ? estacionDestino.name : 'Desconocido';
-
-        guardarViajeEnFirebase({
-          ...viajeEnCurso,
-          fecha: new Date().toISOString()
-        });
-
-        showAlert(`Viaje finalizado en estación "${viajeEnCurso.destino}". Duración: ${viajeEnCurso.duracion}`, 'success');
-      }
-      return copia;
-    });
-
-    setViajeActivo(null);
-    setDestino(null);
+  const estacionDestino = stations.find((s) => s.id === stationId);
   
+  // Validar que la estación tenga al menos un espacio libre
+ if (estacionDestino?.empty_slots === 0) {
+  showAlert("Esta estación está llena. Elige otra para devolver.", "warning");
+  return;
+}
 
-  const estacion = stations.find(s => s.id === stationId);
-  setAlert({ message: `Bicicleta devuelta en ${estacion ? estacion.name : 'la estación'}`, type: 'info' });
-  setTimeout(() => setAlert(null), 3500);
+
+  setHistorial((h) => {
+    const copia = [...h];
+    const viajeEnCurso = copia.find((v) => v.duracion === 'En curso');
+
+    if (viajeEnCurso) {
+      const duracionSegs = Math.floor((Date.now() - viajeEnCurso.inicioTimestamp) / 1000);
+      const minutos = Math.floor(duracionSegs / 60);
+      const segundos = duracionSegs % 60;
+
+      viajeEnCurso.duracion = `${minutos.toString().padStart(2, '0')}:${segundos
+        .toString()
+        .padStart(2, '0')}`;
+      viajeEnCurso.destino = estacionDestino ? estacionDestino.name : 'Desconocido';
+
+      const { inicioTimestamp, ...viajeParaGuardar } = viajeEnCurso;
+      guardarViajeEnFirebase({
+        ...viajeParaGuardar,
+        fecha: new Date().toISOString(),
+      });
+    }
+
+    return copia;
+  });
+   setStations((prevStations) =>
+    prevStations.map((station) =>
+      station.id === stationId
+        ? {
+            ...station,
+            free_bikes: station.free_bikes + 1,
+            empty_slots: station.empty_slots - 1,
+          }
+        : station
+    )
+  );
+  
+  setViajeActivo(null);
+  setDestino(null);
 };
 
 
@@ -378,16 +378,27 @@ useEffect(() => {
     ? stations.filter((s) => [viajeActivo.id, destino.id].includes(s.id))
     : filteredStations;
 
+    const modalStyles = {
+  overlay: {
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
+    alignItems: 'center', justifyContent: 'center',
+    zIndex: 999
+  },
+  modal: {
+    background: 'white', padding: '20px', borderRadius: '8px',
+    boxShadow: '0 0 10px rgba(0,0,0,0.25)'
+  },
+  confirmBtn: {
+    padding: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px'
+  },
+  cancelBtn: {
+    padding: '10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px'
+  }
+};
+
   return (
     <div className="min-h-screen bg-gradient-to-tr from-slate-100 to-slate-300 p-6">
-    {alert && (
-  <AlertMessage
-    message={alert.message}
-    type={alert.type}
-    onClose={() => setAlert(null)}
-  />
-)}
-
       {/* Controles */}
       <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
         <div>
@@ -443,7 +454,6 @@ useEffect(() => {
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="flex-1">
           <div className="rounded-xl overflow-hidden shadow-lg border bg-white">
-            <AlertMessage ref={alertRef} />
             <MapContainer center={location} zoom={13} scrollWheelZoom={true} className="w-full h-[500px]">
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -545,12 +555,45 @@ onClick={() => setFocusedLocation([station.latitude, station.longitude])}
     <button
       className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded-md shadow"
       onClick={(e) => {
-        e.stopPropagation();
-        handleReturn(station.id);
+  e.stopPropagation();
+ Swal.fire({
+  title: '¿Confirmar devolución?',
+  text: '¿Deseas devolver la bicicleta?',
+  icon: 'warning',
+  showCancelButton: true,
+  confirmButtonText: 'Sí, devolver',
+  cancelButtonText: 'Cancelar',
+  customClass: {
+    confirmButton: 'bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700',
+    cancelButton: 'bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400',
+  },
+  buttonsStyling: false,
+  allowOutsideClick: false, // opcional: evita que lo cierren accidentalmente
+  allowEscapeKey: false
+}).then((result) => {
+  if (result.isConfirmed) {
+    // Cierra inmediatamente y muestra la siguiente alerta después
+    setTimeout(() => {
+      handleReturn(); // ejecuta tu función
+      Swal.fire({
+  title: '¡Devuelta!',
+  text: 'La bicicleta fue devuelta correctamente.',
+  icon: 'success',
+  timer: 2000, // se cierra en 2 segundos (2000 milisegundos)
+  showConfirmButton: false,
+  allowOutsideClick: false, // opcional: evita que lo cierren antes
+  allowEscapeKey: false
+});
+
+    }, 100); // Pequeña pausa para permitir que se cierre el primero
+  }
+});
+
       }}
     >
       Devolver bicicleta
     </button>
+  
   ) : puedeElegirDestino ? (
     <button
       className="mt-4 bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow"
@@ -563,64 +606,71 @@ onClick={() => setFocusedLocation([station.latitude, station.longitude])}
       {esDestino ? 'Destino seleccionado' : 'Elegir como destino'}
     </button>
   ) : (
-    !viajeActivo &&
-    station.free_bikes > 0 && (
-      
-      <button
-        className="mt-4 bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleRent(station.id, station.name, station.latitude, station.longitude);
-          requestRent(station);
-        }}
-      >
-        Alquilar bicicleta
-      </button>
-    )
-  )}
 
+  !viajeActivo && station.free_bikes > 0 && (
+    <button
+      className="mt-4 bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow"
+      onClick={(e) => {
+        e.stopPropagation();
+       Swal.fire({
+  title: '¿Confirmar alquiler?',
+  text: `¿Deseas alquilar una bicicleta en ${station.name}?`,
+  icon: 'question',
+  showCancelButton: true,
+  confirmButtonText: 'Sí, alquilar',
+  cancelButtonText: 'Cancelar',
+  customClass: {
+    confirmButton: 'bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700',
+    cancelButton: 'bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400',
+  },
+  buttonsStyling: false // IMPORTANTE: Desactiva los estilos por defecto de SweetAlert2
+}).then((result) => {
+  if (result.isConfirmed) {
+    handleRent(
+      station.id,
+      station.name,
+      station.latitude,
+      station.longitude
+    );
+    Swal.fire({
+              title: '¡Alquilada!',
+              text: 'La bicicleta fue alquilada exitosamente.',
+              icon: 'success',
+              timer: 2000, // ⏱️ se cierra en 2 segundos
+              showConfirmButton: false,
+              allowOutsideClick: false,
+              allowEscapeKey: false
+            });
+  }
+});
+
+      }}
+    >
+      Alquilar bicicleta
+    </button>
+  )
+  )
+}
+
+
+{/* {showModal && (
+        <div style={modalStyles.overlay}>
+          <div style={modalStyles.modal}>
+            <h3>¿Confirmar {modalAction === 'alquilar' ? 'alquiler' : 'devolución'}?</h3>
+            <p>Estación: <strong>{selectedStation?.name}</strong></p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button onClick={confirmarAccion} style={modalStyles.confirmBtn}>Confirmar</button>
+              <button onClick={() => setShowModal(false)} style={modalStyles.cancelBtn}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )} */}
   <p className="text-xs text-gray-400 mt-3">
     Última actualización: {new Date(station.timestamp).toLocaleTimeString()}
   </p>
 </div>
-
             );
-          })}
-          {confirmAlquiler.show && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full text-center">
-            <h3 className="text-lg font-semibold mb-4">Confirmar alquiler</h3>
-            <p className="mb-6">
-              ¿Estás seguro que quieres alquilar una bicicleta en la estación "{confirmAlquiler.station.name}"?
-            </p>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={confirmRent}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-              >
-                Confirmar
-              </button>
-              <button
-                onClick={cancelRent}
-                className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-{/* Alert general para mensajes */}
-      {alert && (
-  <AlertMessage
-    message={alert.message}
-    type={alert.type}
-    onClose={closeAlert}
-  />
-)}
-
-    
-
+          })}    
         </div>
       </div>
     </div>

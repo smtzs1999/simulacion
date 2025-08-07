@@ -11,7 +11,10 @@ const AlertMessage = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     show(title, message, type = 'info') {
       setAlert({ show: true, title, message, type });
-      setTimeout(() => setAlert({ ...alert, show: false }), 4000);
+
+      setTimeout(() => {
+        setAlert(prev => ({ ...prev, show: false }));
+      }, 4000);
     }
   }));
 
@@ -25,8 +28,9 @@ const AlertMessage = forwardRef((props, ref) => {
   };
 
   return (
-    <div className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
-      z-[9999] p-6 rounded-lg shadow-lg text-white ${bgColors[alert.type]} w-[90%] max-w-md text-center`}>
+    <div className={`fixed top-5 left-1/2 transform -translate-x-1/2 z-[9999] 
+      p-4 rounded-lg shadow-lg text-white ${bgColors[alert.type]} 
+      w-[90%] max-w-sm text-center`}>
       <h3 className="text-lg font-bold mb-2">{alert.title}</h3>
       <p>{alert.message}</p>
     </div>
@@ -34,4 +38,3 @@ const AlertMessage = forwardRef((props, ref) => {
 });
 
 export default AlertMessage;
-

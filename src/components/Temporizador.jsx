@@ -4,19 +4,18 @@ const Temporizador = ({ activo }) => {
   const [segundos, setSegundos] = useState(0);
 
   useEffect(() => {
-    let intervalo;
+  let intervalo;
 
-    if (activo) {
-      intervalo = setInterval(() => {
-        setSegundos((prev) => prev + 1);
-      }, 1000);
-    } else {
-      setSegundos(0);
-    }
+  if (activo) {
+    intervalo = setInterval(() => {
+      setSegundos((prev) => prev + 1);
+    }, 1000);
+  } else {
+    setSegundos(0); // Reinicia segundos si se detiene
+  }
 
-    return () => clearInterval(intervalo);
-  }, [activo]);
-
+  return () => clearInterval(intervalo); // Limpieza del intervalo
+}, [activo]);
   const minutos = Math.floor(segundos / 60);
   const segundosRestantes = segundos % 60;
 
@@ -27,5 +26,4 @@ const Temporizador = ({ activo }) => {
     </div>
   );
 };
-
 export default Temporizador;
